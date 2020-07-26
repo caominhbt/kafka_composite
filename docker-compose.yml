@@ -1,0 +1,44 @@
+version: '2'
+services:
+  zookeeper:
+    image: caominhbt/zookeeper
+    restart: always
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+    volumes:
+      - /Applications/Data/Software/zookeeper/configs:/conf
+  kafka:
+    build: .
+    ports:
+      - "9092:9092"
+    links:
+      - zookeeper:zk
+    environment:
+      #HOSTNAME_COMMAND: "docker info | grep ^Name: | cut -d' ' -f 2"
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_CREATE_TOPICS: "Cam1:5:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      #KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      #KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+      #KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      #KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_MESSAGE_MAX_BYTES: 2000000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  kafka-manager:
+    image: caominhbt/kafka_manager:latest
+    ports:
+      - "9000:9000"
+    links:
+      - zookeeper
+      - kafka
+    environment:
+      ZK_HOSTS: zookeeper:2181
+      #APPLICATION_SECRET: letmein
+      #KM_ARGS: -Djava.net.preferIPv4Stack=true
